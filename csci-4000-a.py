@@ -8,11 +8,43 @@
 import tensorflow_hub as hub
 import numpy as np
 import tensorflow_text
+import glob
 
 
-def compare_paragraphs(segment_one, segment_two):
-    embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual-large/3")
+def split_file_into_list(file_name):
+    # read the data from a file
+    output = []
+    with open(file_name, 'r') as f:
+        data = f.read()
+        # paragraphs are separated by two newlines
+        paragraphs = data.split('\n\n')
+        # each paragraph string within a file
+        for paragraph in paragraphs:
+            lines = paragraph.split('\n')
+            # possible header
+            if len(lines) > 1:
+                first_line = lines[0]
+                if first_line[0].isdigit():
+                    new_list = lines[1:]
+                    output.append(' '.join(new_list))
+    return output
 
+
+def calculate_proximities(embed, articles, num_paragraphs):
+    paragraph_proximities = np.empty((num_paragraphs, num_paragraphs))
+
+    for article1 in articles:
+        for j, target_paragraph in enumerate(article1):
+            print(target_paragraph)
+            for article2 in articles:
+                for m, compared_paragraph in enumerate(article2):
+                    proximity = compare_paragraphs(embed, target_paragraph, compared_paragraph)
+                    paragraph_proximities[j, m] = proximity
+
+    return paragraph_proximities
+
+
+def compare_paragraphs(embed, segment_one, segment_two):
     # Compute embeddings.
     segment_one_result = embed(segment_one)
     segment_two_result = embed(segment_two)
@@ -26,20 +58,33 @@ def compare_paragraphs(segment_one, segment_two):
 
 
 def main():
-    # We could also do some kind of comparison between the individual sentences in the query and segment.
-    paragraph_one = ["What do we know of this death? In part, it is a death that does not know itself; it is the living"
-                     " death of those who believe themselves living. But in part, also, it is a death that is suffered:"
-                     " 'When the commandment came, sin revived and I died' (Rom. 7:9-10). What shall we say? Without "
-                     "doubt it is legitimate to compare this death that is suffered with the experience of division and"
-                     " conflict described in the pericope of the Epistle to the Romans (7:14—19), which follows the "
-                     "dialectic of sin and the law reported above. Death, then, is the actualized dualism of the Spirit"
-                     " and the flesh."]
-    paragraph_two = ["Wherefore the law is holy, and the commandment holy, and just, and good, Was then that which is "
-                     "good made death unto me? God forbid. But sin, that it might appear sin, working death in me by "
-                     "that which is good; that sin by the commandment might become exceeding sinful."]
+    # read input files
+    input_files = []
+    input_filepath = "input/*.txt"
+    for infile in glob.glob(input_filepath):
+        try:
+            input_files.append(infile)
+        except FileNotFoundError:
+            print("The file " + infile + " was not found.")
 
-    proximity = compare_paragraphs(paragraph_one, paragraph_two)
-    print(proximity)
+    if not input_files:
+        print("No input files found in " + input_filepath + ". Exiting.")
+        exit()
+
+    articles = []
+    num_paragraphs = 0
+    for file in input_files:
+        article = split_file_into_list(file)
+        articles.append(article)
+        num_paragraphs += len(article)
+
+    print(articles)
+    print(num_paragraphs)
+
+    embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual-large/3")
+    paragraph_proximities = calculate_proximities(embed, articles, num_paragraphs)
+
+    print(paragraph_proximities)
 
 
 if __name__ == "__main__":
