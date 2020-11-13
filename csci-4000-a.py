@@ -1,7 +1,7 @@
 """
 # Name(s): Shahir Taj
 # Course: CSCI 4000 - A
-# Date: 10/21/2020
+# Date: 11/11/2020
 
 """
 
@@ -11,35 +11,34 @@ import tensorflow_text
 import glob
 
 
-def split_file_into_list(file_name):
-    # read the data from a file
-    output = []
-    with open(file_name, 'r') as f:
+def get_article(filename):
+    article = []
+    with open(filename, 'r') as f:
         data = f.read()
-        # paragraphs are separated by two newlines
+        # Separate paragraphs by two newlines.
         paragraphs = data.split('\n\n')
-        # each paragraph string within a file
         for paragraph in paragraphs:
             lines = paragraph.split('\n')
-            # possible header
             if len(lines) > 1:
                 first_line = lines[0]
+                # Check if a paragraph's first line is a header.
                 if first_line[0].isdigit():
-                    new_list = lines[1:]
-                    output.append(' '.join(new_list))
-    return output
+                    lines = lines[1:]
+            # Create a list of all of the article's paragraphs.
+            article.append(' '.join(lines))
+
+    return article
 
 
 def calculate_proximities(embed, articles, num_paragraphs):
     paragraph_proximities = np.empty((num_paragraphs, num_paragraphs))
 
-    for article1 in articles:
-        for j, target_paragraph in enumerate(article1):
-            print(target_paragraph)
-            for article2 in articles:
-                for m, compared_paragraph in enumerate(article2):
-                    proximity = compare_paragraphs(embed, target_paragraph, compared_paragraph)
-                    paragraph_proximities[j, m] = proximity
+    # Create a matrix of the proximities between all paragraphs.
+    for i, (target_paragraph_key, target_paragraph) in enumerate(articles.items()):
+        for j, (compared_paragraph_key, compared_paragraph) in enumerate(articles.items()):
+            # Calculate the proximity between each paragraph in all articles.
+            proximity = compare_paragraphs(embed, target_paragraph, compared_paragraph)
+            paragraph_proximities[i, j] = proximity
 
     return paragraph_proximities
 
@@ -49,7 +48,7 @@ def compare_paragraphs(embed, segment_one, segment_two):
     segment_one_result = embed(segment_one)
     segment_two_result = embed(segment_two)
 
-    # Domain-specific (Digital Ricoeur) training after initial embeddings
+    # Domain-specific (Digital Ricoeur) training after initial embeddings.
 
     # Compute similarity matrix. Higher score indicates greater similarity.
     similarity_matrix = np.inner(segment_one_result, segment_two_result)
@@ -58,7 +57,7 @@ def compare_paragraphs(embed, segment_one, segment_two):
 
 
 def main():
-    # read input files
+    # Read input files.
     input_files = []
     input_filepath = "input/*.txt"
     for infile in glob.glob(input_filepath):
@@ -71,20 +70,21 @@ def main():
         print("No input files found in " + input_filepath + ". Exiting.")
         exit()
 
-    articles = []
+    articles = {}
     num_paragraphs = 0
-    for file in input_files:
-        article = split_file_into_list(file)
-        articles.append(article)
+    # Create a dictionary mapping paragraph locations to paragraph text.
+    for i, input_file in enumerate(input_files):
+        article = get_article(input_file)
+        for j, paragraph in enumerate(article):
+            # Define paragraph locations as (article index, paragraph index).
+            articles[(i, j)] = paragraph
         num_paragraphs += len(article)
-
-    print(articles)
-    print(num_paragraphs)
 
     embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual-large/3")
     paragraph_proximities = calculate_proximities(embed, articles, num_paragraphs)
 
-    print(paragraph_proximities)
+    # Save paragraph_proximities as csv file
+    # Maintain first three characters of filename for table labels
 
 
 if __name__ == "__main__":
