@@ -1,15 +1,27 @@
 """
 # Name(s): Shahir Taj
 # Course: CSCI 4000 - A
-# Date: 11/18/2020
+# Date: 11/19/2020
 
 """
 
+import logging
+import glob
 import tensorflow_hub as hub
 import numpy as np
 import tensorflow_text
-import glob
 import pandas as pd
+
+
+def get_paragraphs(files):
+    paragraphs = {}
+    # Create a dictionary mapping paragraph names to paragraph text.
+    for file in files:
+        article = get_article(file)
+        for paragraph_index, paragraph in enumerate(article):
+            paragraphs[file[6:9] + ", " + str(paragraph_index)] = paragraph
+
+    return paragraphs
 
 
 def get_article(filename):
@@ -31,40 +43,35 @@ def get_article(filename):
     return article
 
 
-def calculate_proximities(embed, articles, num_paragraphs):
-    proximities = np.empty((num_paragraphs, num_paragraphs))
+def calculate_proximities(embed, paragraphs):
+    # Compute embeddings.
+    embeddings = embed(list(paragraphs.values()))
+
+    # Domain-specific (Digital Ricoeur) training after initial embeddings.
+
+    proximities = np.empty([len(embeddings), len(embeddings)])
 
     # Create a matrix of the proximities between all paragraphs.
-    for i, (target_paragraph_key, target_paragraph) in enumerate(articles.items()):
-        for j, (compared_paragraph_key, compared_paragraph) in enumerate(articles.items()):
-            # Calculate the proximity between each paragraph in all articles.
-            proximity = compare_paragraphs(embed, target_paragraph, compared_paragraph)
-            proximities[i, j] = proximity
+    num_comparisons = 0
+    for i, target_paragraph in enumerate(embeddings):
+        for j, compared_paragraph in enumerate(embeddings):
+            proximities[i, j] = np.inner(target_paragraph, compared_paragraph)
 
     return proximities
 
 
-def compare_paragraphs(embed, segment_one, segment_two):
-    # Compute embeddings.
-    segment_one_result = embed(segment_one)
-    segment_two_result = embed(segment_two)
-
-    # Domain-specific (Digital Ricoeur) training after initial embeddings.
-
-    # Compute similarity matrix. Higher score indicates greater similarity.
-    similarity_matrix = np.inner(segment_one_result, segment_two_result)
-
-    return similarity_matrix
-
-
-def write_csv(data, labels):
+def write_csv(labels, data, output_filepath):
     dataframe = pd.DataFrame(data)
     dataframe.columns = labels
     dataframe.index = labels
-    dataframe.to_csv("output/paragraph_proximities.csv")
+    dataframe.to_csv(output_filepath)
 
 
 def main():
+    logging.basicConfig(filename='csci-4000-a.log', format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+                        level=logging.INFO)
+    logging.info("Started")
+
     # Read input files.
     input_files = []
     input_filepath = "input/*.txt"
@@ -77,22 +84,16 @@ def main():
     if not input_files:
         print("No input files found in " + input_filepath + ". Exiting.")
         exit()
-
-    articles = {}
-    paragraph_labels = []
-    num_paragraphs = 0
-    # Create a dictionary mapping paragraph locations to paragraph text.
-    for file in input_files:
-        article = get_article(file)
-        for j, paragraph in enumerate(article):
-            articles[(file[6:9], j)] = paragraph
-            paragraph_labels.append(file[6:9] + ", " + str(j))
-            num_paragraphs += 1
+    logging.info("Files Read")
 
     embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual-large/3")
-    paragraph_proximities = calculate_proximities(embed, articles, num_paragraphs)
+    paragraphs = get_paragraphs(input_files)
+    paragraph_proximities = calculate_proximities(embed, paragraphs)
+    logging.info("Proximities Calculated")
 
-    write_csv(paragraph_proximities, paragraph_labels)
+    output_filepath = "output/paragraph_proximities.csv"
+    write_csv(paragraphs.keys(), paragraph_proximities, output_filepath)
+    logging.info("Finished")
 
 
 if __name__ == "__main__":
