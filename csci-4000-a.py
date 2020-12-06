@@ -1,7 +1,7 @@
 """
 # Name(s): Shahir Taj
 # Course: CSCI 4000 - A
-# Date: 12/03/2020
+# Date: 12/06/2020
 
 """
 
@@ -99,10 +99,10 @@ def main():
         try:
             input_files.append(infile)
         except FileNotFoundError:
-            print("The file " + infile + " was not found.")
+            logging.info("The file %s was not found.", infile)
 
     if not input_files:
-        print("No input files found in " + input_filepath + ". Exiting.")
+        logging.info("No input files found in %s. Exiting.", input_filepath)
         exit()
     logging.info("Files Read")
 
