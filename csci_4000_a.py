@@ -108,7 +108,7 @@ def write_txt(paragraphs, closest_paragraphs, output_filepath):
 
 
 def main():
-    logging.basicConfig(filename='csci-4000-a.log', format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
+    logging.basicConfig(filename='csci_4000_a.log', format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',
                         level=logging.INFO)
     logging.info("Started")
 
