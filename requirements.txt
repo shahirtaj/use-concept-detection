@@ -1,0 +1,4 @@
+tensorflow_hub
+numpy
+pandas
+tensorflow_text
