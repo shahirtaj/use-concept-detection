@@ -1,16 +1,20 @@
 """
 # Name(s): Shahir Taj
 # Course: CSCI 4000 - A
-# Date: 12/06/2020
+# Date: 08/31/2021
 
 """
 
 import logging
 import glob
+import heapq
+import textwrap
 import tensorflow_hub as hub
 import numpy as np
-import tensorflow_text
 import pandas as pd
+import tensorflow_text
+
+NUM_CLOSEST_PARAGRAPHS = 5
 
 
 def process_files(files):
@@ -49,18 +53,24 @@ def get_article(filename):
 
 def get_paragraph_proximities(embed, paragraphs):
     # Compute embeddings.
-    embeddings = embed(list(paragraphs))
+    embeddings = embed(list(paragraphs.values()))
 
     # Domain-specific (Digital Ricoeur) training after initial embeddings?
 
-    proximities = np.empty([len(embeddings), len(embeddings)])
+    all_proximities = np.empty([len(embeddings), len(embeddings)])
+    closest_paragraphs = {}
 
     # Create a matrix of the proximities between all paragraphs.
     for i, target_embedding in enumerate(embeddings):
+        target_proximities = []
         for j, compared_embedding in enumerate(embeddings):
-            proximities[i, j] = np.inner(target_embedding, compared_embedding)
+            all_proximities[i, j] = np.inner(target_embedding, compared_embedding)
+            if i != j:
+                target_proximities.append((list(paragraphs.keys())[j], all_proximities[i, j]))
+        closest_paragraphs[list(paragraphs.keys())[i]] = heapq.nlargest(NUM_CLOSEST_PARAGRAPHS, target_proximities,
+                                                                        key=lambda x: x[1])
 
-    return proximities
+    return all_proximities, closest_paragraphs
 
 
 def get_article_proximities(article_lengths, paragraph_proximities):
@@ -71,7 +81,6 @@ def get_article_proximities(article_lengths, paragraph_proximities):
     for i, article_length in enumerate(article_lengths):
         start_col = 0
         for j, target_length in enumerate(article_lengths):
-            # Exclude or include diagonals in average calculations?
             proximities[i, j] = np.average(paragraph_proximities[start_row:start_row + article_length,
                                            start_col:start_col + target_length])
             start_col += target_length
@@ -85,6 +94,17 @@ def write_csv(labels, data, output_filepath):
     dataframe.columns = labels
     dataframe.index = labels
     dataframe.to_csv(output_filepath)
+
+
+def write_txt(paragraphs, closest_paragraphs, output_filepath):
+    with open(output_filepath, 'w') as f:
+        for target_label, target_text in paragraphs.items():
+            f.write(target_label + '\n')
+            f.write(textwrap.fill(target_text) + '\n\n')
+            for (compared_label, proximity) in closest_paragraphs[target_label]:
+                f.write('\t%s - %s\n' % (compared_label, proximity))
+                f.write('\t' + textwrap.fill(paragraphs[compared_label], subsequent_indent="\t") + '\n\n')
+            f.write('\n')
 
 
 def main():
@@ -110,10 +130,11 @@ def main():
     logging.info("Files Processed")
 
     embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual-large/3")
-    paragraph_proximities = get_paragraph_proximities(embed, paragraphs.values())
+    paragraph_proximities, closest_paragraphs = get_paragraph_proximities(embed, paragraphs)
     logging.info("Paragraph Proximities Calculated")
     article_proximities = get_article_proximities(articles.values(), paragraph_proximities)
     logging.info("Article Proximities Calculated")
+    logging.info("Closest Paragraphs Found")
 
     paragraph_proximities_filepath = "output/paragraph_proximities.csv"
     write_csv(paragraphs.keys(), paragraph_proximities, paragraph_proximities_filepath)
@@ -121,6 +142,9 @@ def main():
     article_proximities_filepath = "output/article_proximities.csv"
     write_csv(articles.keys(), article_proximities, article_proximities_filepath)
     logging.info("Article Proximities Exported")
+    closest_paragraphs_filepath = "output/closest_paragraphs.txt"
+    write_txt(paragraphs, closest_paragraphs, closest_paragraphs_filepath)
+    logging.info("Closest Paragraphs Exported")
 
     logging.info("Finished")
 
