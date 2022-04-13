@@ -1,2 +1,2 @@
-# csci-4000-a
-CSCI 4000 - A: Advanced Independent Study
+# bert-concept-detection
+BERT Driven Concept Detection in Philosophical Corpora
