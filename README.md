@@ -24,4 +24,4 @@ Add domain-specific training after initial embeddings?
 
 ## License
 
-Distributed under the MIT license. See LICENSE.txt for more information.
+Distributed under the MIT license. See ''LICENSE'' for more information.
