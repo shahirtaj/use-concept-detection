@@ -19,7 +19,7 @@ This file contains the following functions:
 
 ## TODO
 
-Add domain-specific training after initial embeddings?
+Add domain-specific training after initial embeddings
 
 ## License
 
