@@ -12,7 +12,7 @@ This file contains the following functions:
     * get_article - return a list of paragraphs in an article
     * get_paragraph_proximities - return a matrix of the proximities between all paragraphs and a dictionary of the
                                   closest paragraphs to each paragraph
-    * get_article_proximities - return a matrix of the avergage proximities between all articles
+    * get_article_proximities - return a matrix of the average proximities between all articles
     * write_csv - save the proximities between all paragraphs or the average proximities between all articles in a .csv
                   file
     * write_txt - save the closest paragraphs to each paragraph in a .txt file
