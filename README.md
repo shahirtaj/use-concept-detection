@@ -1,5 +1,4 @@
-# bert-concept-detection
-BERT Driven Concept Detection in Philosophical Corpora
+# BERT Driven Concept Detection in Philosophical Corpora
 
 This script accepts a corpora of text files (.txt) containing Aristotle's entries in the Stanford Encyclopedia of
 Philosophy as input, uses Google's Universal Sentence Encoder algorithm to embed each paragraph, and generates the
