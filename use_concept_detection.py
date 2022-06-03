@@ -213,7 +213,7 @@ def write_txt(paragraphs, closest_paragraphs, output_file):
 
 
 def main():
-    logging.basicConfig(filename='bert_concept_detection.log', format='%(asctime)s %(message)s',
+    logging.basicConfig(filename='use_concept_detection.log', format='%(asctime)s %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
     logging.info("Started")
 
