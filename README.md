@@ -8,4 +8,4 @@ Add domain-specific training after initial embeddings.
 
 ## License
 
-Distributed under the MIT license. See ``LICENSE.md`` for more information.
+This project is distributed under the MIT License. See the [LICENSE](LICENSE) file for more information.
